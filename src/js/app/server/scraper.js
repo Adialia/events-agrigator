@@ -5,7 +5,7 @@ var DouScraper = require('./scrape-dou.js'),
 
 function makeScaraper(html){
 	debug("makeScraper");
-	if (html === 'http://parter.ua'){
+	if (html.indexOf('http://parter.ua') != -1){
 		return new ParterScraper();
 	}
 	if (html === 'http://dou.ua/calendar') {

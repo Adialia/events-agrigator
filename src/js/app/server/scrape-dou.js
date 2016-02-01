@@ -7,19 +7,15 @@ var request = require('request'),
 
 function DouScraper(){
     debug("DouScraper constructor");
+    this.html = 'http://dou.ua/calendar';
 }
 
-DouScraper.prototype.getEventUrls = function(html){
-    scrapeMainPage(html).then(function(pageQuantity, urls){
-        scrapeAllSecondaryDouPages(html,pageQuantity).then(function(nextPagesUrls){
-        urls = urls.concat(nextPagesUrls);
-    },
-    function(error){console.log("scrapeAllSecondaryDouPages ERROR!",error);});
-
-    console.log("eventsQuantity ",urls.length);
-    return urls;}, 
-    function(error){console.log(error);});
-}
+DouScraper.prototype.getEventUrls = function(){
+    debug("getEventUrls");
+    //debug("this.html",this.html);
+    scrapeMainPage(this.html).then(scrapeSecondaryPages)
+    .catch(function(err){console.log(err);});
+};
 
 DouScraper.prototype.scrapeEventPage = function(fullUrl) {
     debug("DouScraper scrapeEventPage begin");
@@ -70,6 +66,7 @@ DouScraper.prototype.scrapeEventPage = function(fullUrl) {
 };
 
 function scrapeMainPage(html){
+    debug("scrapeMainPage");
     var promise = new Promise(function(resolve, reject) {
         request(html, function(error, resp, body){
 
@@ -78,12 +75,17 @@ function scrapeMainPage(html){
                 var $ = cheerio.load(body);
                 var pageQuantity = $('div.b-paging > span:last-of-type').prev().text();
                 var urls = findDouUrls($);
-                
-
-                resolve(pageQuantity, urls);
+                debug("resolve of scrapeMainPage:", pageQuantity, urls.length);
+                var result = {
+                    pageQuantity: pageQuantity,
+                    urls: urls,
+                    html: html
+                };
+                resolve(result);
 
             }
             else{
+                debug("error in scrapeMainPage");
                 reject(error);
             };
         });
@@ -91,35 +93,41 @@ function scrapeMainPage(html){
     return promise;
 };
 
-function scrapeAllSecondaryDouPages(html,quantity){
-    var urls = [];
-    var promise = new Promise(function(resolve,reject){
-        for (var i = 2; i <= quantity; i++){
-        var pageUrl = html+'/page-'+i;
-        console.log(pageUrl);
-        scrapeSecondaryDouPage(pageUrl).then(function(nextUrls){
-            urls = urls.concat(nextUrls);
-            console.log("urls", urls.length);
-        },
-        function(error){
-
-            console.log("loadDouUrls ERROR!",error, " at ", pageUrl);
-            reject(error);
-        })
+function scrapeSecondaryPages(result){
+    var pageQuantity = result.pageQuantity, 
+        html = result.html,
+        urls = result.urls;
+    debug("first batch: ", urls.length,pageQuantity);
+    var urlsArray = [];
+    for (var i = 2; i <= pageQuantity; i++){
+        var pageUrl = html+'/page-'+i; 
+        //debug("pageUrl:",pageUrl);
+        urlsArray.push(pageUrl);
     }
-    resolve(urls);
-    });
-    return promise;
+    debug(urlsArray);    
+    Promise.all(urlsArray.map(scrapeSingleSecondaryPage))
+        .then(function(arrayOfResults){
+            debug("problem in concat");
+            var urls = [].concat.apply([], arrayOfResults);
+            //urls = urls.concat(nextUrls);
+            debug("urls", urls.length);   
+            debug("FINAL!!!!!!!!",urls.length);
+            return urls;        
+        }).catch(function(err){
+            console.log(error);
+        });   
 };
 
-function scrapeSecondaryDouPage(pageUrl){
+
+function scrapeSingleSecondaryPage(pageUrl){
+    debug("scrapeSecondaryDouPage");
     //console.log("pageUrl",pageUrl);
     var promise = new Promise(function(resolve,reject){
     request(pageUrl, function(err, resp, body){
         if (!err && resp.statusCode == 200){
             var $ = cheerio.load(body);
             var urls = findDouUrls($);
-            console.log(pageUrl,"is loaded");
+            debug(pageUrl,"is loaded, urls:", urls.length);
             resolve(urls);
         }
         else{ reject(err);};
@@ -132,7 +140,7 @@ function findDouUrls($){
     var urls = [];
     $('div.event > div.title > a').each(function(eventTag){
         var url = $(this).attr('href');
-        debug("url",url);
+        //debug("url in findDouUrls",url);
         urls.push(url);
     });
     return urls;

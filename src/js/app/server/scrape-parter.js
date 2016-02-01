@@ -9,6 +9,7 @@ var request = require('request'),
 
 function ParterScraper(){
     debug("ParterScraper constructor");
+    this.html = 'http://parter.ua';
 }
 
 function getEventImage($) {
@@ -81,6 +82,30 @@ ParterScraper.prototype.scrapeEventPage = function(fullUrl) {
     });
     });
     debug("return promise");
+    return promise;
+};
+
+ParterScraper.prototype.getEventUrls = function(){
+    var html = this.html;
+    var promise = new Promise(function(resolve, reject) {
+        debug("getMainPageUrls");
+        var url, urls = [];
+        request(html, function(err,resp, body){
+            if (!err && resp.statusCode == 200){
+                var $ = cheerio.load(body);
+                $("div[class='event']").each(function(){
+                    url = $(this).find('a').attr('href');
+                    urls.push(html+url);
+                });   
+                debug("resolve", urls.length);
+                resolve(urls);
+            }
+            else{
+                debug("ERROR in getMainPageUrls()");
+                reject(err);
+            }
+        });
+    })
     return promise;
 };
 
