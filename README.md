@@ -1,7 +1,6 @@
 # events-agrigator
-group project
-
-  init commands
+install nodejs.
+run next commands.
 
   install node and tools once:
 
