@@ -12,8 +12,8 @@ module.exports = function(){
 }();
 
 function runScraper(site){
-	Scraper(site).getEventUrls().then(function(parterEventsUrls) {
-		parterEventsUrls.forEach(processEventPage);
+	Scraper(site).getEventUrls().then(function(eventsUrls) {
+		eventsUrls.forEach(processEventPage);
 	})
 	.catch(function(err){
 		console.error(err);
@@ -32,9 +32,9 @@ function processEventPage(fullUrl, index, array){
 };
 
 function addEventToDatabase(eventData){
-	   	var parterEvent = new Model(eventData);
-	   	debug("addEventToDatabase", parterEvent.eventTitle);
-	   	parterEvent.save(function(err) {
+	   	var singleEvent = new Model(eventData);
+	   	debug("addEventToDatabase", singleEvent.eventTitle);
+	   	singleEvent.save(function(err) {
 	       if (err) {debug('Database err saving: ' + url);}
 	   	});
  };
