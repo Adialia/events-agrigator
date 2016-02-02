@@ -6,38 +6,27 @@ var Model = require('./model'),
 	debug = require('debug')('bot'),
     cheerio = require('cheerio');
 
-var parterScraper = Scraper('http://parter.ua');
-parterScraper.getEventUrls('http://parter.ua').then(function(parterEventsUrls) {
-	debug("parterEventsUrls");
-	parterEventsUrls.forEach(processEventPage);
-})
-.catch(function(err){
-	console.error(err);
-});
+module.exports = function(){
 
 
-var douScraper = Scraper("http://dou.ua/calendar");
-console.log("douScraper.html",douScraper.html);
-douScraper.getEventUrls()
-.then(function(douEventsUrls){
-	debug("douEventsUrls", douEventsUrls.length);
-	douEventsUrls.forEach(processEventPage);
-})
-.catch(function(err){
-	console.error(err);
-});
-
-/*
-var html3 = "http://dou.ua/calendar/9637/";
-var scraper2 = Scraper(html2);
-scraper2.scrapeEventPage(html3).then(function(model){
-	console.log("promised title", model);
-}, function(error) {console.log("ERROR DOU SCRAPE", error, html3);})*/
-
+	Scraper('http://parter.ua').getEventUrls().then(function(parterEventsUrls) {
+		parterEventsUrls.forEach(processEventPage);
+	})
+	.catch(function(err){
+		console.error(err);
+	});	
+	
+	Scraper("http://dou.ua/calendar").getEventUrls()
+	.then(function(douEventsUrls){
+		douEventsUrls.forEach(processEventPage);
+	})
+	.catch(function(err){
+		console.error(err);
+	});
+}();
 
 function processEventPage(fullUrl, index, array){
 	debug("processEventPage");
-	//var fullUrl = html + url;
 	debug("start of model creation", fullUrl);
 	var scraper = Scraper(fullUrl);
 	scraper.scrapeEventPage(fullUrl)
