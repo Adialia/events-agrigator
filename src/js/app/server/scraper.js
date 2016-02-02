@@ -8,7 +8,7 @@ function makeScaraper(html){
 	if (html.indexOf('http://parter.ua') != -1){
 		return new ParterScraper();
 	}
-	if (html === 'http://dou.ua/calendar') {
+	if (html.indexOf('http://dou.ua/calendar') != -1) {
 		return new DouScraper();
 	}
 }

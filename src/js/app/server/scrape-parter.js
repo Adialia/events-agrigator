@@ -3,54 +3,16 @@ var request = require('request'),
     debug = require('debug')('bot:scrape-parter'),
     cheerio = require('cheerio');
 
-
-// return model through promises
-//separete scrapeEventPage into 2 functions
-
-function ParterScraper(){
-    debug("ParterScraper constructor");
-    this.html = 'http://parter.ua';
-}
-
-function getEventImage($) {
-    var eventImage = $('img[src*="/img/item/"]').attr('src');
-    if (eventImage){
-        return eventImage;
-    }
-    else{
-        return "";
-    }
-};
-
-function getEventDescription($) {
-    var eventDescription = $('p').text();   
-    return eventDescription;
-};
-
-function getEventPrice($) {
-    var eventPrice = $('tr:nth-child(3) > td[align="center"]').first().text();
-    return eventPrice;
-};
-
-function getEventTime($) {
-    var eventTime = []
-    $('tr:nth-child(1) > td[align="center"]').each(function(){
-            var time = $(this).text();
-            eventTime.push(time);
-        });  
-    return eventTime;
-};
-
 ParterScraper.prototype.scrapeEventPage = function(fullUrl) {
     debug("scrapeEventPage begin");
     var promise = new Promise(function(resolve, reject) {
     request(fullUrl,function(err,resp,body){
         if (!err && resp.statusCode == 200){
-            debug("scrapeEventPage request is successfull");
+            //debug("scrapeEventPage request is successfull");
             var $ = cheerio.load(body,{
                 decodeEntities: false
             });
-            debug("createModel begin");
+            //debug("createModel begin");
             var eventTitle, eventLocation, eventDescription, eventTime = [], 
                 eventLink, eventImage, eventPrice;
             var eventPage = $('td.center');
@@ -72,7 +34,7 @@ ParterScraper.prototype.scrapeEventPage = function(fullUrl) {
                 eventImage: eventImage
             }
             //console.log("createModel",model);
-            debug("createModel resolve");
+            //debug("createModel resolve");
             resolve(model);
         }
         else{
@@ -108,5 +70,41 @@ ParterScraper.prototype.getEventUrls = function(){
     })
     return promise;
 };
+
+function ParterScraper(){
+    debug("ParterScraper constructor");
+    this.html = 'http://parter.ua';
+}
+
+function getEventImage($) {
+    var eventImage = $('img[src*="/img/item/"]').attr('src');
+    if (eventImage){
+        return eventImage;
+    }
+    else{
+        return "";
+    }
+};
+
+function getEventDescription($) {
+    var eventDescription = $('p').text();   
+    return eventDescription;
+};
+
+function getEventPrice($) {
+    var eventPrice = $('tr:nth-child(3) > td[align="center"]').first().text();
+    return eventPrice;
+};
+
+function getEventTime($) {
+    var eventTime = []
+    $('tr:nth-child(1) > td[align="center"]').each(function(){
+            var time = $(this).text();
+            eventTime.push(time);
+        });  
+    return eventTime;
+};
+
+
 
 module.exports = ParterScraper;

@@ -4,6 +4,7 @@ var request = require('request'),
     cheerio = require('cheerio');
 
 //var html = 'http://dou.ua/calendar';
+//503 ERROR!!!
 
 function DouScraper(){
     debug("DouScraper constructor");
@@ -13,8 +14,18 @@ function DouScraper(){
 DouScraper.prototype.getEventUrls = function(){
     debug("getEventUrls");
     //debug("this.html",this.html);
-    scrapeMainPage(this.html).then(scrapeSecondaryPages)
-    .catch(function(err){console.log(err);});
+    var html = this.html;
+    var promise = new Promise(function(resolve,reject){
+    scrapeMainPage(html)
+        .then(scrapeSecondaryPages)
+        .then(function(allUrls){
+            debug("allUrls, resolved getEventUrls",allUrls.length);
+            resolve(allUrls);
+        })
+        .catch(function(err){
+            reject(err);});
+    });
+    return promise; 
 };
 
 DouScraper.prototype.scrapeEventPage = function(fullUrl) {
@@ -56,7 +67,7 @@ DouScraper.prototype.scrapeEventPage = function(fullUrl) {
             resolve(model);
         }
         else{
-            debug("ERROR in scrapeEventPage");
+            debug("ERROR in scrapeEventPage", "response code:", resp.statusCode);
             reject(err);
         }
     });
@@ -66,7 +77,7 @@ DouScraper.prototype.scrapeEventPage = function(fullUrl) {
 };
 
 function scrapeMainPage(html){
-    debug("scrapeMainPage");
+    debug("scrapeMainPage",html);
     var promise = new Promise(function(resolve, reject) {
         request(html, function(error, resp, body){
 
@@ -94,30 +105,36 @@ function scrapeMainPage(html){
 };
 
 function scrapeSecondaryPages(result){
+    var promise = new Promise(function(resolve,reject){
     var pageQuantity = result.pageQuantity, 
         html = result.html,
         urls = result.urls;
     debug("first batch: ", urls.length,pageQuantity);
     var urlsArray = [];
-    for (var i = 2; i <= pageQuantity; i++){
+    //6 should be changed to pageQuantity
+    //now it throughs 503 error
+    for (var i = 2; i <= 6; i++){
         var pageUrl = html+'/page-'+i; 
         //debug("pageUrl:",pageUrl);
         urlsArray.push(pageUrl);
     }
-    debug(urlsArray);    
-    Promise.all(urlsArray.map(scrapeSingleSecondaryPage))
+    debug(urlsArray);   
+    var arrayOfPromises =  urlsArray.map(scrapeSingleSecondaryPage);
+    Promise.all(arrayOfPromises)
         .then(function(arrayOfResults){
-            debug("problem in concat");
-            var urls = [].concat.apply([], arrayOfResults);
-            //urls = urls.concat(nextUrls);
-            debug("urls", urls.length);   
+            var newUrls = [].concat.apply([], arrayOfResults);
+            urls = urls.concat(newUrls);
             debug("FINAL!!!!!!!!",urls.length);
-            return urls;        
-        }).catch(function(err){
-            console.log(error);
+            resolve(urls);        
+        }).catch(function(err,pageUrl){
+            // log that I have an error, return the entire array;
+             console.log('A promise failed to resolve', err, "at", pageUrl);
+             reject(err);
+            //return arrayOfPromises;
         });   
+    });
+    return promise;
 };
-
 
 function scrapeSingleSecondaryPage(pageUrl){
     debug("scrapeSecondaryDouPage");
@@ -130,7 +147,13 @@ function scrapeSingleSecondaryPage(pageUrl){
             debug(pageUrl,"is loaded, urls:", urls.length);
             resolve(urls);
         }
-        else{ reject(err);};
+        else{ 
+            console.log("scrapeSingleSecondaryPage ERROR at ",pageUrl, err,resp.statusCode);
+            if (err){
+                reject(err);
+            }
+            
+        };
     });
     });
     return promise;
