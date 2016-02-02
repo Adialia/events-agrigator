@@ -7,23 +7,18 @@ var Model = require('./model'),
     cheerio = require('cheerio');
 
 module.exports = function(){
+	var sourses = ['http://parter.ua',"http://dou.ua/calendar"];
+	sourses.forEach(runScraper);
+}();
 
-
-	Scraper('http://parter.ua').getEventUrls().then(function(parterEventsUrls) {
+function runScraper(site){
+	Scraper(site).getEventUrls().then(function(parterEventsUrls) {
 		parterEventsUrls.forEach(processEventPage);
 	})
 	.catch(function(err){
 		console.error(err);
 	});	
-	
-	Scraper("http://dou.ua/calendar").getEventUrls()
-	.then(function(douEventsUrls){
-		douEventsUrls.forEach(processEventPage);
-	})
-	.catch(function(err){
-		console.error(err);
-	});
-}();
+}
 
 function processEventPage(fullUrl, index, array){
 	debug("processEventPage");
